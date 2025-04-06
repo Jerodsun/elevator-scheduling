@@ -91,16 +91,17 @@ const Floor = ({ floorNumber, totalFloors, waitingPassengers, onCallElevator }) 
 const Elevator = ({ elevator, floorHeight, totalFloors }) => {
   // Calculate elevator position based on current floor
   const topPosition = (totalFloors - elevator.current_floor) * floorHeight;
+  
+  // Determine elevator state and color
   const state = elevator.state || 'IDLE';
   const elevatorColor = ELEVATOR_COLORS[state];
   
   // Determine if elevator is in transition (between floors)
   const isMoving = state === 'MOVING';
-  // const isBetweenFloors = elevator.current_floor !== Math.floor(elevator.current_floor);
   
   return (
     <div 
-      className={`absolute w-12 h-10 ${elevatorColor} border border-gray-700 rounded transition-all duration-100`}
+      className={`absolute w-12 h-10 ${elevatorColor} border border-gray-700 rounded elevator-moving`}
       style={{ 
         top: `${topPosition}px`,
         transition: isMoving ? 'top 0.5s linear' : 'none'
@@ -132,7 +133,13 @@ const Building = ({ simulationState, onCallElevator }) => {
     if (simulationState) {
       setElevators(simulationState.elevators || []);
       setWaitingPassengers(simulationState.waiting_passengers || {});
-      setTotalFloors(simulationState.floors || 25);
+      setTotalFloors(simulationState.time ? simulationState.elevators[0]?.id + 1 > 25 ? simulationState.elevators[0]?.id + 1 : 25 : 25);
+      
+      // For debugging
+      console.log("Simulation state updated:", simulationState);
+      if (simulationState.elevators && simulationState.elevators.length > 0) {
+        console.log("First elevator:", simulationState.elevators[0]);
+      }
     }
   }, [simulationState]);
 
@@ -140,13 +147,19 @@ const Building = ({ simulationState, onCallElevator }) => {
   const floors = Array.from({ length: totalFloors }, (_, i) => totalFloors - i);
   const floorHeight = 48; // Height of each floor in pixels
   
+  // Calculate building height based on number of floors
+  const buildingHeight = totalFloors * floorHeight;
+  
+  // Calculate number of elevators to display
+  const numElevators = elevators.length > 0 ? elevators.length : 6;
+  
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 h-full">
       <h2 className="text-xl font-bold mb-4">Building Visualization</h2>
       
-      <div className="relative">
+      <div className="relative" style={{ height: `${buildingHeight}px` }}>
         {/* Floors */}
-        <div className="relative">
+        <div className="relative z-10">
           {floors.map(floorNumber => (
             <Floor 
               key={floorNumber}
@@ -159,9 +172,9 @@ const Building = ({ simulationState, onCallElevator }) => {
         </div>
         
         {/* Elevator shafts */}
-        <div className="absolute inset-0 flex justify-center space-x-16">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="relative w-12 h-full bg-gray-200">
+        <div className="absolute inset-0 flex justify-around z-0">
+          {Array.from({ length: numElevators }).map((_, i) => (
+            <div key={i} className="relative w-16 h-full bg-gray-200 mx-1">
               {/* Elevator position indicator lines */}
               {floors.map(floorNumber => (
                 <div 
@@ -175,9 +188,9 @@ const Building = ({ simulationState, onCallElevator }) => {
         </div>
         
         {/* Elevators */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 flex justify-around z-20">
           {elevators.map((elevator, i) => (
-            <div key={i} className="absolute" style={{ left: `${70 + i * 64}px` }}>
+            <div key={i} className="relative w-16">
               <Elevator 
                 elevator={elevator}
                 floorHeight={floorHeight}
