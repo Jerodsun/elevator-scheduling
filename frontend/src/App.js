@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Building from './components/Building';
 import Controls from './components/Controls';
 import EventStream from './components/EventStream';
@@ -11,37 +11,39 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [simulationState, setSimulationState] = useState(null);
   const [events, setEvents] = useState([]);
-  const [wsClient, setWsClient] = useState(null);
+  const wsClientRef = useRef(null);
   
-  // Define initWebSocket as a useCallback to avoid dependency issues
-  const initWebSocket = useCallback(() => {
-    const client = createWebSocketClient(
-      (data) => {
-        if (data.type === 'state_update') {
-          setSimulationState(data.data);
-        }
-      },
-      () => console.log('WebSocket reconnected'),
-      () => {
-        console.log('WebSocket disconnected');
-        setTimeout(initWebSocket, 3000);
-      }
-    );
-    
-    setWsClient(client);
-  }, []);
-  
-  // Initialize WebSocket connection on component mount
+  // Initialize WebSocket connection only once
   useEffect(() => {
-    initWebSocket();
+    // Only create a new connection if one doesn't exist
+    if (!wsClientRef.current) {
+      wsClientRef.current = createWebSocketClient(
+        (data) => {
+          if (data.type === 'state_update') {
+            setSimulationState(data.data);
+          }
+        },
+        () => console.log('WebSocket connected'),
+        () => {
+          console.log('WebSocket disconnected');
+          // Set a timeout to attempt reconnection
+          setTimeout(() => {
+            console.log('Attempting to reconnect WebSocket...');
+            wsClientRef.current = null; // Clear the ref so we can create a new connection
+          }, 3000);
+        }
+      );
+    }
     
-    // Cleanup function
+    // Cleanup function - properly close the connection when component unmounts
     return () => {
-      if (wsClient) {
-        wsClient.close();
+      if (wsClientRef.current) {
+        console.log('Closing WebSocket connection on unmount');
+        wsClientRef.current.close();
+        wsClientRef.current = null;
       }
     };
-  }, [initWebSocket, wsClient]);
+  }, []); // Empty dependency array ensures this only runs once on mount
   
   // Fetch initial simulation status
   useEffect(() => {
@@ -57,8 +59,10 @@ function App() {
     fetchStatus();
   }, []);
   
-  // Fetch events periodically
+  // Fetch events periodically - only when simulation is running
   useEffect(() => {
+    let interval;
+    
     const fetchEvents = async () => {
       try {
         const response = await api.getEvents(100);
@@ -71,10 +75,13 @@ function App() {
     };
     
     if (isRunning) {
-      fetchEvents();
-      const interval = setInterval(fetchEvents, 2000);
-      return () => clearInterval(interval);
+      fetchEvents(); // Fetch immediately when simulation starts
+      interval = setInterval(fetchEvents, 2000);
     }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isRunning]);
   
   // Handler for starting the simulation
