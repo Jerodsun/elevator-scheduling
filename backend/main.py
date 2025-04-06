@@ -109,17 +109,21 @@ async def start_all_tasks(passenger_rate: float = 1.0):
     global simulation_task, generator_task, broadcast_task
 
     # Cancel existing tasks if they're running
-    if simulation_task:
+    if simulation_task and not simulation_task.done():
         simulation_task.cancel()
-    if generator_task:
+    if generator_task and not generator_task.done():
         generator_task.cancel()
-    if broadcast_task:
+    if broadcast_task and not broadcast_task.done():
         broadcast_task.cancel()
 
     # Create new tasks
     simulation_task = asyncio.create_task(run_simulation())
     generator_task = asyncio.create_task(run_passenger_generator(passenger_rate))
     broadcast_task = asyncio.create_task(broadcast_state())
+
+    # Add explicit logging
+    print(f"Started simulation tasks with passenger rate: {passenger_rate}")
+    print(f"Simulation running: {elevator_system.running}")
 
 
 # API endpoints
@@ -164,6 +168,9 @@ async def start_simulation(config: SimulationConfig, background_tasks: Backgroun
     else:
         elevator_system.time_scale = config.time_scale
         elevator_system.reset()
+
+    # Set running to True before starting tasks
+    elevator_system.running = True  # Explicitly set to True
 
     # Start tasks
     background_tasks.add_task(start_all_tasks, config.passenger_rate)
