@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
   backend:
@@ -8,13 +8,16 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
 
   frontend:
     build: ./frontend
     container_name: elevator-simulation-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend
-    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
