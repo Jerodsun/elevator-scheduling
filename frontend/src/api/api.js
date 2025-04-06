@@ -91,6 +91,9 @@ export const api = {
   }
 };
 
+// Keep track of the active WebSocket connection
+let activeWebSocket = null;
+
 /**
  * WebSocket client for real-time updates
  * @param {Function} onMessage - Callback function for incoming messages
@@ -99,6 +102,20 @@ export const api = {
  * @returns {Object} WebSocket client with send and close methods
  */
 export const createWebSocketClient = (onMessage, onConnect, onDisconnect) => {
+  // If there's already an active connection, return it instead of creating a new one
+  if (activeWebSocket && activeWebSocket.readyState === WebSocket.OPEN) {
+    console.log('Reusing existing WebSocket connection');
+    return activeWebSocket;
+  }
+  
+  // Close any existing connections that might be in a closing or connecting state
+  if (activeWebSocket) {
+    console.log('Closing existing WebSocket connection before creating a new one');
+    activeWebSocket.close();
+    activeWebSocket = null;
+  }
+  
+  console.log('Creating new WebSocket connection');
   const ws = new WebSocket(`${WS_BASE_URL}/ws`);
   
   ws.onopen = () => {
@@ -115,8 +132,9 @@ export const createWebSocketClient = (onMessage, onConnect, onDisconnect) => {
     }
   };
   
-  ws.onclose = () => {
-    console.log('WebSocket connection closed');
+  ws.onclose = (event) => {
+    console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
+    activeWebSocket = null; // Clear the reference
     if (onDisconnect) onDisconnect();
   };
   
@@ -124,7 +142,8 @@ export const createWebSocketClient = (onMessage, onConnect, onDisconnect) => {
     console.error('WebSocket error:', error);
   };
   
-  return {
+  // Create client interface
+  const client = {
     send: (data) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(data));
@@ -134,9 +153,15 @@ export const createWebSocketClient = (onMessage, onConnect, onDisconnect) => {
     },
     close: () => {
       ws.close();
+      activeWebSocket = null;
     },
     getState: () => ws.readyState
   };
+  
+  // Store the active connection
+  activeWebSocket = client;
+  
+  return client;
 };
 
 export default api;
