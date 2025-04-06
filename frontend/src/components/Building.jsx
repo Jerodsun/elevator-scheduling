@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api/api';
+// import { api } from '../api/api';
 
 // Special floor types
 const SPECIAL_FLOORS = {
@@ -36,7 +36,7 @@ const DirectionIndicator = ({ direction }) => {
 
 // Floor component
 const Floor = ({ floorNumber, totalFloors, waitingPassengers, onCallElevator }) => {
-  const isSpecialFloor = Object.values(SPECIAL_FLOORS).includes(floorNumber);
+  // const isSpecialFloor = Object.values(SPECIAL_FLOORS).includes(floorNumber);
   const floorColor = FLOOR_COLORS[floorNumber] || FLOOR_COLORS.DEFAULT;
   const floorLabel = (() => {
     if (floorNumber === SPECIAL_FLOORS.LOBBY) return 'L';
@@ -96,7 +96,7 @@ const Elevator = ({ elevator, floorHeight, totalFloors }) => {
   
   // Determine if elevator is in transition (between floors)
   const isMoving = state === 'MOVING';
-  const isBetweenFloors = elevator.current_floor !== Math.floor(elevator.current_floor);
+  // const isBetweenFloors = elevator.current_floor !== Math.floor(elevator.current_floor);
   
   return (
     <div 
