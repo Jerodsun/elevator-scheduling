@@ -29,7 +29,7 @@ const Statistics = ({ simulationState }) => {
   });
   
   const [historicalData, setHistoricalData] = useState([]);
-  const [waitTimeData, setWaitTimeData] = useState([]);
+  // const [waitTimeData, setWaitTimeData] = useState([]);
   
   // Fetch statistics periodically
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Building from './components/Building';
 import Controls from './components/Controls';
 import EventStream from './components/EventStream';
@@ -13,39 +13,8 @@ function App() {
   const [events, setEvents] = useState([]);
   const [wsClient, setWsClient] = useState(null);
   
-  // Initialize WebSocket connection on component mount
-  useEffect(() => {
-    const client = createWebSocketClient(
-      // Message handler
-      (data) => {
-        if (data.type === 'state_update') {
-          setSimulationState(data.data);
-        }
-      },
-      // Connect handler
-      () => {
-        console.log('Connected to WebSocket server');
-      },
-      // Disconnect handler
-      () => {
-        console.log('Disconnected from WebSocket server');
-        // Attempt reconnection after a delay
-        setTimeout(initWebSocket, 3000);
-      }
-    );
-    
-    setWsClient(client);
-    
-    // Cleanup function
-    return () => {
-      if (client) {
-        client.close();
-      }
-    };
-  }, []);
-  
-  // Function to re-initialize WebSocket
-  const initWebSocket = () => {
+  // Define initWebSocket as a useCallback to avoid dependency issues
+  const initWebSocket = useCallback(() => {
     const client = createWebSocketClient(
       (data) => {
         if (data.type === 'state_update') {
@@ -60,7 +29,19 @@ function App() {
     );
     
     setWsClient(client);
-  };
+  }, []);
+  
+  // Initialize WebSocket connection on component mount
+  useEffect(() => {
+    initWebSocket();
+    
+    // Cleanup function
+    return () => {
+      if (wsClient) {
+        wsClient.close();
+      }
+    };
+  }, [initWebSocket, wsClient]);
   
   // Fetch initial simulation status
   useEffect(() => {
