@@ -1,5 +1,7 @@
 # Elevator Scheduling Simulation
 
+### A vibe coding project
+
 A full-stack app for visualizing and simulating elevator scheduling algorithms in a multi-floor building.
 
 ## Overview
