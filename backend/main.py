@@ -20,7 +20,11 @@ from pydantic import BaseModel
 from simulation.elevator_simulation import ElevatorSystem, PassengerGenerator, Direction
 
 # Initialize FastAPI app
-app = FastAPI(title="Elevator Simulation API")
+app = FastAPI(
+    title="Elevator Simulation API",
+    description="REST API for an elevator simulation system",
+    version="1.0.0",
+)
 
 # Add CORS middleware
 app.add_middleware(
